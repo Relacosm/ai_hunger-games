@@ -1,0 +1,21 @@
+/* src/index.css */
+
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap');
+
+body {
+  font-family: 'Satoshi', sans-serif;
+}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root { /* #root is common in CRA and Vite */
+    @apply bg-neutral-950 text-slate-100;
+
+    /* This ensures the background covers the full height */
+    height: 100%; 
+  }
+}
