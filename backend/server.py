@@ -7,7 +7,6 @@ import random
 import time
 import redis
 from werkzeug.middleware.proxy_fix import ProxyFix
-from functools import wraps
 
 # Load environment variables
 load_dotenv()
@@ -48,63 +47,6 @@ except Exception as e:
     redis_client = None
 
 REQUEST_LIMIT = int(os.getenv('REQUEST_LIMIT', 200))
-RATE_LIMIT_WINDOW = 12 * 60 * 60  # 12 hours in seconds
-
-def get_client_ip():
-    """Get the client's IP address"""
-    if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
-    return request.remote_addr
-
-def check_rate_limit(ip_address):
-    """Check if IP has exceeded rate limit"""
-    if not redis_client:
-        return True, 0, RATE_LIMIT_WINDOW
-    
-    try:
-        key = f"rate_limit:{ip_address}"
-        current = redis_client.get(key)
-        
-        if current is None:
-            # First request from this IP
-            redis_client.setex(key, RATE_LIMIT_WINDOW, 1)
-            return True, 1, RATE_LIMIT_WINDOW
-        
-        current = int(current)
-        if current >= 1:  # Only 1 game per 12 hours
-            ttl = redis_client.ttl(key)
-            return False, current, ttl
-        
-        # Increment counter
-        redis_client.incr(key)
-        return True, current + 1, redis_client.ttl(key)
-        
-    except Exception as e:
-        print(f"Redis rate limit error: {e}")
-        return True, 0, RATE_LIMIT_WINDOW
-
-def rate_limit_decorator(f):
-    """Decorator to apply rate limiting to routes"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        ip = get_client_ip()
-        allowed, count, ttl = check_rate_limit(ip)
-        
-        if not allowed:
-            hours = ttl // 3600
-            minutes = (ttl % 3600) // 60
-            retry_after = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
-            
-            return jsonify({
-                'error': 'Rate limit exceeded',
-                'message': 'You can only play one game every 12 hours. Please try again later.',
-                'retry_after': retry_after,
-                'retry_after_seconds': ttl
-            }), 429
-        
-        return f(*args, **kwargs)
-    
-    return decorated_function
 
 def increment_and_check():
     """Increment counter and check if limit reached"""
@@ -178,7 +120,6 @@ def generate_response(prompt, max_tokens=150, temperature=0.8, retry=3):
     return "I need a moment to think about this."
 
 @app.route('/api/answers', methods=['POST'])
-@rate_limit_decorator
 def get_answers():
     """Generate answers from each AI personality"""
     
@@ -187,7 +128,8 @@ def get_answers():
     if not allowed:
         return jsonify({
             'error': 'Service temporarily unavailable',
-            'message': f'API request limit reached ({REQUEST_LIMIT} requests). Please contact administrator.',
+            'message': f'API request limit reached ({REQUEST_LIMIT} requests). Want to play more? Clone the repo and run it locally with your own API key for unlimited games!',
+            'github': 'https://github.com/relacosm/ai_hunger-games',
             'requests_used': count
         }), 503
     
@@ -401,7 +343,6 @@ if __name__ == '__main__':
     print(f"API Key: {'✓ Configured' if HF_API_KEY else '✗ Missing'}")
     print(f"Redis: {'✓ Connected' if redis_client else '✗ Not Connected'}")
     print(f"Request Limit: {REQUEST_LIMIT}")
-    print(f"Rate Limit: 1 game per 12 hours per IP")
     print(f"Server: http://localhost:5000")
     print("="*50 + "\n")
     
@@ -409,4 +350,5 @@ if __name__ == '__main__':
         print("⚠️  WARNING: HF_TOKEN not found!")
         print("Please create a .env file with: HF_TOKEN=your_key_here\n")
     
+
     app.run(debug=True, port=5000, host='0.0.0.0')
