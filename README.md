@@ -21,7 +21,7 @@ A Hunger Games-inspired battle royale where 8 AI personalities compete by answer
 
 ## 🚀 Live Demo
 
-**[Play Now](https://ai-hunger-games.vercel.app)** | **[Backend API](https://ai-hunger-games.onrender.com)**
+**[Play Now](https://ai-hunger-games.vercel.app)**
 
 ## 📋 Prerequisites
 
