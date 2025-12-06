@@ -8,12 +8,34 @@ import time
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import redis
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+
+app.wsgi_app = ProxyFix(
+    app.wsgi_app, 
+    x_for=1, 
+    x_proto=1, 
+    x_host=1, 
+    x_prefix=1
+)
+
+# Replace 'CORS(app)' with this:
+CORS(app, 
+    resources={r"/api/*": {
+        "origins": [
+            "https://ai-hunger-games.vercel.app",  # Your actual Vercel Production URL
+            "https://ai-hunger-games.relacosm.tech",
+            "http://localhost:5173"              # Your local development URL
+        ]
+    }},
+    supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization"],
+    expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining", "Retry-After"]
+)
 
 # Initialize Flask-Limiter
 limiter = Limiter(
@@ -348,4 +370,5 @@ if __name__ == '__main__':
         print("⚠️  WARNING: HF_TOKEN not found!")
         print("Please create a .env file with: HF_TOKEN=your_key_here\n")
     
+
     app.run(debug=True, port=5000, host='0.0.0.0')
