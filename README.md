@@ -64,7 +64,7 @@ REDIS_URL=redis://localhost:6379
 REQUEST_LIMIT=200
 
 # Admin Key (for resetting counters)
-ADMIN_KEY=your_secret_admin_key
+ADMIN_KEY=admin_key
 ```
 
 **Get your HuggingFace Token:**
