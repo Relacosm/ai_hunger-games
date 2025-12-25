@@ -81,7 +81,7 @@ export default function AIHungerGames() {
       setStage('answers');
     } catch (error) {
       console.error('Error:', error);
-      alert(`Error connecting to server at ${import.meta.env.VITE_API_URL}`);
+      alert(`Trial period has ended. PLease visit the github repo to run the game locally`);
       setLoading(false);
       setStage('input');
     }
